@@ -38,7 +38,7 @@ class Ls:
                         if not i.name.startswith('.') or 'a' in self.opt], sep='   ') 
             
         except PermissionError:
-            print(Fore.RED + "Este processo não tem permissão para listar esse diretório" + Style.RESET_ALL)
+            print(Fore.RED + "This process doesn't have the permissions to list this directory" + Style.RESET_ALL)
             
         finally:
             deinit() ; quit()
