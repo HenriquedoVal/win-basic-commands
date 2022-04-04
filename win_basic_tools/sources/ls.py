@@ -117,7 +117,7 @@ def main():
     args = sys.argv[1:]
 
     #verificar caso haja portabilidade para unix
-    if len(args) > 2: args = args[:2] ; print(f'Parâmetros {sys.argv[3:]} ignorados') 
+    if len(args) > 2: args = args[:2] ; print(f'Ignored {sys.argv[3:]} parameters') 
 
     if args: obj = Ls(*args)
     else: obj = Ls()
