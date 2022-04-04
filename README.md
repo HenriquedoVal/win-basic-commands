@@ -5,7 +5,7 @@ This repository intends to give some simple commands to Windows cmd.exe and Powe
 
 ## Installation
 
-Use the package manager [pip](https://pip.pypa.io/en/stablw/) to install win-basic-tools
+Use the package manager [pip](https://pip.pypa.io/en/stable/) to install win-basic-tools
 
 ~~~bash
 pip install win-basic-tools
