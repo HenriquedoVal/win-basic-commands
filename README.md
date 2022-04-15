@@ -31,6 +31,9 @@ Uninstall: run `win-basic-tools uninstall` before `pip uninstall` for reseting R
 
 Although this package is mainly intended for Windows, the resources in `win_basic_tools/sources` can be used in any system that runs Python3.6+
 
+## Example
+
+![ll example](example/ll_example.png)
 
 ## License
 
