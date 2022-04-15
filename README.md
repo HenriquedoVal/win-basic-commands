@@ -17,7 +17,7 @@ $ pip install win-basic-tools
 ### Windows
 
 ~~~bash
-$ win-basic-tools
+$ win-basic-tools setup
 ~~~
 
 Run for setting the macros file for your cmd.exe. It will create the `.macros.doskey` at your home directory and add it to the Registry.
@@ -25,9 +25,11 @@ This will create the alias to the `win_basic_tools/sources/` resources and to so
 
 After refreshing your prompt, you can use `ls`, `ll`, `which`. See `$HOME/.macros.doskey` for the list of aliases.
 
-### Unix
+Uninstall: run `win-basic-tools uninstall` before `pip uninstall` for reseting Registry
 
-Although this package is mainly intended for Windows, the resources in `win_basic_tools/sources` can be used in any system that runs Python3.8+
+### Others
+
+Although this package is mainly intended for Windows, the resources in `win_basic_tools/sources` can be used in any system that runs Python3.6+
 
 
 ## License
