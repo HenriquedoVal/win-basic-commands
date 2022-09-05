@@ -177,10 +177,12 @@ def main():
 
     args = sys.argv[1:]
 
-    # For Powershell and Unix compatibility
+    # notice useless parameters
     if len(args) > 2:
-        print(f'Ignored {sys.argv[3:]} parameter(s)')
+        print(f'Ignored {args[2:]} parameter(s)')
         args = args[:2]
+    if len(args) == 2 and not args[0].startswith('-'):
+        print('Try: py ls.py -acl path')
 
     Ls(*args).echo(0)
     deinit()
