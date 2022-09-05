@@ -4,17 +4,17 @@ import stat
 import time
 from colorama import Fore, Style, init, deinit
 
+
 class Ls:
     '''This is a simple Python class for listing the content of a directory.
-    The sole purpose is giving portability to the common ls command to Windows systems'''
+    The sole purpose is giving portability to the common ls command
+    to Windows systems'''
 
-    just = 6
+    just = 7
 
     def __init__(self, opt='', path='.') -> None:
 
-        if not opt:
-            self.opt, self.path = opt, path
-        elif opt.startswith('-'):
+        if not opt or opt.startswith('-'):
             self.opt, self.path = opt, path
         else:
             self.opt, self.path = '', opt
@@ -26,61 +26,81 @@ class Ls:
 
                 if 'l' in self.opt:
                     for i in dir:
-                        if i.name.startswith('.') and 'a' not in self.opt:
+                        filemode_str = self._windows_filemode(
+                                i.stat().st_file_attributes, 'c' in self.opt)
+                        if (i.name.startswith('.')
+                           or 'h' in filemode_str) and 'a' not in self.opt:
                             continue
 
-                        print(
-                            self.colorful_permissions(stat.filemode(i.stat().st_mode), 'c' in self.opt),
-                            time.strftime('%d %b %y %H:%M', time.localtime(i.stat().st_ctime)),
-                            self.human_color(self.humanize(i), 'c' in self.opt).rjust(self.just),
-                            self.type_color(i, 'c' in self.opt), sep='   ')
+                        # print() by 'column item' for better performance
+                        print(end=' ')
+                        print(filemode_str, end='   ')
+                        print(time.strftime(
+                            '%d %b %y %H:%M', time.localtime(
+                                i.stat().st_ctime)), end='   ')
+                        print(self._human_color(
+                            self._humanize(i), 'c' in self.opt).rjust(
+                                self.just), end='   ')
+                        print(self._type_color(i, 'c' in self.opt))
 
                 else:
-                    print(*[self.type_color(i, 'c' in self.opt) for i in dir \
-                        if not i.name.startswith('.') or 'a' in self.opt], sep='   ') 
+                    print(*[self._type_color(i, 'c' in self.opt) for i in dir
+                          if not i.name.startswith('.')
+                          or 'a' in self.opt], sep='   ')
 
+        except NotADirectoryError:
+            print(f'{self.path} is not a directory')
+        except FileNotFoundError as err:
+            print(err)
         except PermissionError as err:
-            if signal: # not going recursively on echo()
+            if signal:  # not going recursively on echo()
+                print(f'{str(err)[:12]} {err.strerror}: {err.filename}')
                 deinit()
                 quit()
-
             try:
                 self.path = os.path.realpath(self.path)
                 self.echo(1)
                 print(Style.RESET_ALL +
-                    f"\nYou can't access files from here because CD doesn't follow symlinks. Do first: cd {os.path.realpath('.')}"
-                    )
+                      "\nYou can't access files from here because CD doesn't "
+                      f"follow symlinks. Do first: cd {os.path.realpath('.')}"
+                      )
             except PermissionError:
-                print(err)
+                pass
 
-    def type_color(self, i: os.DirEntry, colors: bool) -> str:
+    def _type_color(self, i: os.DirEntry, colors: bool) -> str:
         if not colors:
             return i.name
 
-        #if i.is_symlink(): doesn't work
-            
-        if i.is_dir():                
-            if os.path.realpath(i.path) != os.path.join(os.path.realpath(self.path), i.name): # workaround
-                return Fore.CYAN + i.name + Fore.LIGHTBLACK_EX + ' --> ' + os.path.realpath(i.path)
+        # if i.is_symlink(): doesn't work
+        if i.is_dir():
+            # workaround
+            if os.path.realpath(i.path) != os.path.join(os.path.realpath(self.path), i.name):  # noqa: E501
+                return (Fore.CYAN
+                        + i.name
+                        + Fore.LIGHTBLACK_EX
+                        + ' --> '
+                        + os.path.realpath(i.path)
+                        + Style.RESET_ALL)
 
-            return Fore.LIGHTBLUE_EX + i.name
+            return Fore.LIGHTBLUE_EX + i.name + Style.RESET_ALL
 
         else:
-            if i.name.endswith(('.zip', '.exe', '.msi', '.dll', '.bat', '.sys', '.log', '.ini')):
-                return Fore.YELLOW + i.name
+            if i.name.endswith(('.zip', '.exe', '.msi', '.dll',
+                                '.bat', '.sys', '.log', '.ini')):
+                return Fore.YELLOW + i.name + Style.RESET_ALL
             if i.name.endswith(('.py', '.pyx', '.pyd', '.pyw')):
-                return Fore.GREEN + i.name
+                return Fore.GREEN + i.name + Style.RESET_ALL
             if i.name.endswith(('.tmp')):
-                return Fore.LIGHTBLACK_EX + i.name
+                return Fore.LIGHTBLACK_EX + i.name + Style.RESET_ALL
             if i.name.endswith(('.pdf')):
-                return Fore.LIGHTRED_EX + i.name
+                return Fore.LIGHTRED_EX + i.name + Style.RESET_ALL
             return i.name
 
-    def humanize(self, i: os.DirEntry):
+    def _humanize(self, i: os.DirEntry):
         if i.is_dir():
             return '-'
 
-        entry = i.stat().st_size 
+        entry = i.stat().st_size
         units = ('k', 'M', 'G')
         final = ''
 
@@ -97,11 +117,11 @@ class Ls:
             return str(entry)
         return '-'
 
-    def human_color(self, data: str, colors: bool) -> str:
+    def _human_color(self, data: str, colors: bool) -> str:
         if not colors:
             return data
 
-        self.just = 15
+        self.just = 16
 
         if 'G' in data:
             return Fore.RED + data + Style.RESET_ALL
@@ -112,19 +132,44 @@ class Ls:
         else:
             return Fore.WHITE + data + Style.RESET_ALL
 
+    def _windows_filemode(self,
+                          data: os.stat_result.st_file_attributes,
+                          colors: bool):
+        str_res = ''
+        checks = (('a', stat.FILE_ATTRIBUTE_ARCHIVE),
+                  ('d', stat.FILE_ATTRIBUTE_DIRECTORY),
+                  ('h', stat.FILE_ATTRIBUTE_HIDDEN),
+                  ('r', stat.FILE_ATTRIBUTE_READONLY))
 
-    def colorful_permissions(self, data: os.stat_result.st_mode, colors: bool) -> str:
+        for check in checks:
+            str_res = str_res + check[0] if data == check[1] else str_res + '-'
+        else:
+            # runs only if we haven't a perfect match
+            if str_res == '----':
+                str_res = ''
+                for check in checks:
+                    if data >= check[1]:
+                        str_res += check[0]
+                        data -= check[1]
+                    else:
+                        str_res += '-'
+                else:
+                    # something went wrong if there's still `data`
+                    if data:
+                        str_res = '---*'
+
         if not colors:
-            return data
+            return str_res
 
-        lis = list(data)
-        lis.insert(-3, Fore.LIGHTRED_EX)
-        lis.insert(4, Fore.LIGHTYELLOW_EX)
-        lis.insert(1, Fore.LIGHTGREEN_EX)
-        if lis[0] == 'd': lis.insert(0, Fore.LIGHTBLUE_EX)
-        lis.append(Style.RESET_ALL)
+        for char in 'adhr':
+            if char in str_res:
+                str_res = (str_res[:str_res.index(char)]
+                           + Fore.BLUE
+                           + char
+                           + Style.RESET_ALL
+                           + str_res[str_res.index(char)+1:])
 
-        return ''.join(lis)
+        return str_res
 
 
 def main():
@@ -132,14 +177,12 @@ def main():
 
     args = sys.argv[1:]
 
-    #verificar caso haja portabilidade para unix
+    # For Powershell and Unix compatibility
     if len(args) > 2:
+        print(f'Ignored {sys.argv[3:]} parameter(s)')
         args = args[:2]
-        print(f'Ignored {sys.argv[3:]} parameters') 
 
-    obj = Ls(*args) if args else Ls()
-    
-    obj.echo(0)
+    Ls(*args).echo(0)
     deinit()
 
 
