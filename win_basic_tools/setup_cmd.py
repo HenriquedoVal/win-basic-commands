@@ -1,47 +1,82 @@
 import os
 import sys
+import winreg
 
 
-def main():
-    if len(sys.argv) != 2:
-        print('This script do the setup for cmd.exe', 'Run:', '> win-basic-tools setup', 'Then refresh your cmd.exe', sep='\n')
-        quit(0)
-    
-    if sys.argv[1] == 'uninstall':
-        uninstall()
-        quit(0)
+SUB_KEY = "Software\\Microsoft\\Command Processor"
+HOME_PATH = os.path.expanduser('~')
 
-    if sys.argv[1] != 'setup':
-        print('This script do the setup for cmd.exe', 'Run:', '> win-basic-tools setup', sep='\n')
-        quit(0)
 
-    assert sys.platform == 'win32'
-    
-    sources_path = f'{sys.exec_prefix}/Lib/site-packages/win_basic_tools/sources'
-    home_path = os.path.expanduser('~')
+def setup():
+    from pathlib import Path
 
-    with open(f'{home_path}\\.macros.doskey', 'w') as f:
+    sources_path = Path(__file__).parent / 'sources'
+
+    with open(f'{HOME_PATH}\\.macros.doskey', 'w') as f:
         print(
             f'ls=python {sources_path}\\ls.py $*',
             f'll=python {sources_path}\\ls.py -lac $*',
-            f'which=python {sources_path}\\which.py $1',
-            f'touch=python {sources_path}\\touch.py $*',
+            'touch=echo off $T for %x in ($*) do type nul > %x $T echo on',
             'cat=type $1',
             'pwd=cd',
             'mv=move $1 $2',
             'rm=del $*',
             sep='\n',
-            file=f)
-        
-        
-    os.system(f'reg add "HKCU\\Software\\Microsoft\\Command Processor" /v Autorun /d "doskey /macrofile=\\"{home_path}\\.macros.doskey\"" /f')
+            file=f
+        )
+
+    key_handle = winreg.OpenKeyEx(
+        winreg.HKEY_CURRENT_USER, SUB_KEY, 0, winreg.KEY_SET_VALUE
+    )
+    winreg.SetValueEx(
+        key_handle,
+        'Autorun',
+        0,
+        winreg.REG_SZ,
+        f'doskey /macrofile="{HOME_PATH}\\.macros.doskey"'
+    )
+    winreg.CloseKey(key_handle)
+
+    print('Refresh your cmd.exe for complete install.')
+
 
 def uninstall():
-    home_path = os.path.expanduser('~')
+    key_handle = winreg.OpenKeyEx(
+        winreg.HKEY_CURRENT_USER, SUB_KEY, 0, winreg.KEY_SET_VALUE
+    )
+    winreg.DeleteValue(key_handle, 'Autorun')
+    winreg.CloseKey(key_handle)
 
-    os.system(f'reg delete "HKCU\\Software\\Microsoft\\Command Processor" /v Autorun')
-    os.system(f'del {home_path}\\.macros.doskey')
-    print('Refresh you cmd.exe for complete uninstall')
+    os.remove(HOME_PATH + '\\.macros.doskey')
+
+    print('Refresh your cmd.exe for complete uninstall.')
+
+
+def main():
+    if sys.platform != 'win32':
+        print('This is intended for Windows OS.')
+        return 1
+
+    if len(sys.argv) < 2:
+        pass
+    elif sys.argv[1] == 'uninstall':
+        uninstall()
+        return 0
+    elif sys.argv[1] == 'setup':
+        setup()
+        return 0
+
+    print(
+        'This script do the setup and the uninstall of win_basic_tools.',
+        'Run:',
+        '> win-basic-tools setup',
+        'Or:',
+        '> win-basic-tools uninstall',
+        'Then refresh your cmd.exe',
+        sep='\n'
+    )
+    return 1
+
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())

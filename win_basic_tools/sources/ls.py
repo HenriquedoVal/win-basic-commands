@@ -6,18 +6,20 @@ from colorama import Fore, Style, init, deinit
 
 
 class Ls:
-    '''This is a simple Python class for listing the content of a directory.
-    The sole purpose is giving portability to the common ls command
-    to Windows systems'''
+    '''
+    This is a simple Python class for listing the content of a directory.
+    The sole purpose is giving better visualization.
+    '''
 
-    just = 7
+    __slots__ = 'opt', 'path', 'just'
 
-    def __init__(self, opt='', path='.') -> None:
+    def __init__(self, opt='', path='.', just=7) -> None:
 
         if not opt or opt.startswith('-'):
             self.opt, self.path = opt, path
         else:
             self.opt, self.path = '', opt
+        self.just = just
 
     def echo(self, signal: int) -> None:
         try:
@@ -57,15 +59,13 @@ class Ls:
                 print(f'{str(err)[:12]} {err.strerror}: {err.filename}')
                 deinit()
                 quit()
-            try:
-                self.path = os.path.realpath(self.path)
-                self.echo(1)
-                print(Style.RESET_ALL +
-                      "\nYou can't access files from here because CD doesn't "
-                      f"follow symlinks. Do first: cd {os.path.realpath('.')}"
-                      )
-            except PermissionError:
-                pass
+
+            self.path = os.path.realpath(self.path)
+            self.echo(1)
+            print(Style.RESET_ALL +
+                  "\nYou can't access files from here because CD doesn't "
+                  f"follow symlinks. Do first: cd {os.path.realpath('.')}"
+                  )
 
     def _type_color(self, i: os.DirEntry, colors: bool) -> str:
         if not colors:
@@ -128,13 +128,16 @@ class Ls:
         elif 'M' in data:
             return Fore.LIGHTRED_EX + data + Style.RESET_ALL
         elif 'k' in data:
-            return Fore.LIGHTYELLOW_EX + data + Style.RESET_ALL
+            return Fore.YELLOW + data + Style.RESET_ALL
         else:
             return Fore.WHITE + data + Style.RESET_ALL
 
-    def _windows_filemode(self,
-                          data: os.stat_result.st_file_attributes,
-                          colors: bool):
+    def _windows_filemode(
+        self,
+        data: os.stat_result.st_file_attributes,
+        colors: bool
+    ):
+
         str_res = ''
         checks = (('a', stat.FILE_ATTRIBUTE_ARCHIVE),
                   ('d', stat.FILE_ATTRIBUTE_DIRECTORY),
@@ -143,20 +146,20 @@ class Ls:
 
         for check in checks:
             str_res = str_res + check[0] if data == check[1] else str_res + '-'
-        else:
-            # runs only if we haven't a perfect match
-            if str_res == '----':
-                str_res = ''
-                for check in checks:
-                    if data >= check[1]:
-                        str_res += check[0]
-                        data -= check[1]
-                    else:
-                        str_res += '-'
+
+        # only if we haven't a perfect match
+        if str_res == '----':
+            str_res = ''
+            for check in checks:
+                if data >= check[1]:
+                    str_res += check[0]
+                    data -= check[1]
                 else:
-                    # something went wrong if there's still `data`
-                    if data:
-                        str_res = '---*'
+                    str_res += '-'
+            else:
+                # something went wrong if there's still `data`
+                if data:
+                    str_res = '---*'
 
         if not colors:
             return str_res
