@@ -10,7 +10,7 @@ HOME_PATH = os.path.expanduser('~')
 def setup():
     from pathlib import Path
 
-    sources_path = Path(__file__).parent / 'sources'
+    sources_path = Path(__file__).parent
 
     with open(f'{HOME_PATH}\\.macros.doskey', 'w') as f:
         print(
