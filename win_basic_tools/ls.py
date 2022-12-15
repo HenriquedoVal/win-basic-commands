@@ -86,14 +86,20 @@ class Ls:
                       file=self.out)
                 return
 
-            self.path = os.path.realpath(self.path)
-            self.echo(1)
-            print(
-                Style.RESET_ALL +
-                "\nYou can't access files from here because CD doesn't "
-                f"follow symlinks. Do first: cd {self.path}",
-                file=self.out
-            )
+            aux = os.path.realpath(self.path)
+            if aux != self.path:
+                self.path = aux
+                self.echo(signal=1)
+                print(
+                    Style.RESET_ALL +
+                    "\nYou can't access files from here."
+                    f" Do first: cd {self.path}",
+                    file=self.out
+                )
+            else:
+                print(f'{str(err)[:12]} {err.strerror}: {err.filename}',
+                      file=self.out)
+
             return
 
         if 'l' in self.opt:
