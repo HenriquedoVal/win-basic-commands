@@ -3,3 +3,6 @@ setup.py
 
 __pycache__
 test*
+.gitignore
+dist
+win_basic_tools.egg-info

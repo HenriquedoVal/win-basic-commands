@@ -2,7 +2,6 @@ import os
 import sys
 import winreg
 
-
 SUB_KEY = "Software\\Microsoft\\Command Processor"
 HOME_PATH = os.path.expanduser('~')
 
@@ -15,7 +14,8 @@ def setup():
     with open(f'{HOME_PATH}\\.macros.doskey', 'w') as f:
         print(
             f'ls=python {sources_path}\\ls.py $*',
-            f'll=python {sources_path}\\ls.py -lac $*',
+            f'll=python {sources_path}\\ls.py -cil $*',
+            f'la=python {sources_path}\\ls.py -acil $*',
             'touch=echo off $T for %x in ($*) do type nul > %x $T echo on',
             'cat=type $1',
             'pwd=cd',

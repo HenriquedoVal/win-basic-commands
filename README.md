@@ -27,7 +27,7 @@ Run for setting the macros file for your cmd.exe.
 It will create the `.macros.doskey` at your home directory and point it in Registry.  
 Alias gives more source control than entry-points, however maybe it will be the choice in the future.  
   
-After refreshing your prompt, you can use `ls`, `ll`, `touch`. See `$HOME/.macros.doskey` for the list of aliases.  
+After refreshing your prompt, you can use `ls`, `ll`, `touch`. See `%USERPROFILE%\.macros.doskey` for the list of aliases.  
   
 Uninstall: run `win-basic-tools uninstall` before `pip uninstall` for reseting Registry
 
