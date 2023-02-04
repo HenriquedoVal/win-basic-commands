@@ -7,15 +7,12 @@ HOME_PATH = os.path.expanduser('~')
 
 
 def setup():
-    from pathlib import Path
-
-    sources_path = Path(__file__).parent
 
     with open(f'{HOME_PATH}\\.macros.doskey', 'w') as f:
         print(
-            f'ls=python {sources_path}\\ls.py $*',
-            f'll=python {sources_path}\\ls.py -cil $*',
-            f'la=python {sources_path}\\ls.py -acil $*',
+            'ls=python -m win_basic_tools $*',
+            'll=python -m win_basic_tools -cil $*',
+            'la=python -m win_basic_tools -acil $*',
             'touch=echo off $T for %x in ($*) do type nul > %x $T echo on',
             'cat=type $1',
             'pwd=cd',
@@ -44,10 +41,17 @@ def uninstall():
     key_handle = winreg.OpenKeyEx(
         winreg.HKEY_CURRENT_USER, SUB_KEY, 0, winreg.KEY_SET_VALUE
     )
-    winreg.DeleteValue(key_handle, 'Autorun')
+    try:
+        winreg.DeleteValue(key_handle, 'Autorun')
+    except FileNotFoundError:
+        print("Registry key wasn't found.")
+
     winreg.CloseKey(key_handle)
 
-    os.remove(HOME_PATH + '\\.macros.doskey')
+    try:
+        os.remove(HOME_PATH + '\\.macros.doskey')
+    except FileNotFoundError:
+        print("Macros file wasn't found.")
 
     print('Refresh your cmd.exe for complete uninstall.')
 
