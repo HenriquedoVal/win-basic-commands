@@ -71,7 +71,7 @@ def main():
         return 0
 
     print(
-        'This script do the setup and the uninstall of win_basic_tools.',
+        'This script does the setup and the uninstall of win_basic_tools.',
         'Run:',
         '> win-basic-tools setup',
         'Or:',

@@ -32,6 +32,31 @@ colors_map = {
 }
 
 
+class DirEntryWrapper:
+    # os.DirEntry is a final class, can't be subclassed
+    __slots__ = 'entry', 'name', 'path'
+
+    def __init__(self, entry: os.DirEntry):
+        self.entry = entry
+        self.name = entry.name
+        self.path = entry.path
+
+    def stat(self):
+        try:
+            return self.entry.stat()
+        except PermissionError:
+            return self.entry.stat(follow_symlinks=False)
+
+    def is_dir(self):
+        try:
+            return self.entry.is_dir()
+        except PermissionError:
+            return self.entry.is_dir(follow_symlinks=False)
+
+    def is_symlink(self):
+        return self.entry.is_symlink()
+
+
 class Cache:
     __slots__ = 'data'
 
@@ -66,7 +91,7 @@ class Ls:
     def __del__(self):
         deinit()
 
-    def echo(self, signal: int) -> None:
+    def echo(self, signal=0) -> None:
         try:
             scandir = os.scandir(self.path)
 
@@ -83,12 +108,6 @@ class Ls:
             if aux != self.path:
                 self.path = aux
                 self.echo(signal=1)
-                print(
-                    Style.RESET_ALL +
-                    "\nYou can't access files from here."
-                    f" Do first: cd {self.path}",
-                    file=self.out
-                )
             else:
                 print(f'{str(err)[:12]} {err.strerror}: {err.filename}',
                       file=self.out)
@@ -97,6 +116,8 @@ class Ls:
         except OSError:
             print(f'{self.path} is not a valid path.', file=self.out)
             return
+
+        scandir = [DirEntryWrapper(i) for i in scandir]
 
         # just add to the list if it will be ever displayed
         # first we remove hidden ones if user hasn't asked for it
@@ -149,12 +170,9 @@ class Ls:
             sep='  ', file=self.out
         )
 
-    def _type_color(self, i: os.DirEntry) -> str:
+    def _type_color(self, i: DirEntryWrapper) -> str:
         is_syml = i.is_symlink()
-        try:
-            is_dir = i.is_dir()
-        except PermissionError:
-            is_dir = False
+        is_dir = i.is_dir()
 
         if is_dir:
             self.dirs += 1
@@ -216,19 +234,17 @@ class Ls:
 
         return data
 
-    def _humanize_size(self, i: os.DirEntry):
-        try:
-            if i.is_dir():
-                return '-'
-        except PermissionError:
-            pass
+    def _humanize_size(self, i: DirEntryWrapper):
+        if i.is_dir():
+            return '-'
 
         entry = i.stat().st_size
+
         self.size += entry
 
         return self._humanize_size2(entry)
 
-    def _windows_filemode(self, data):
+    def _windows_filemode(self, data: int):
         if data == 0x80:
             res = list('-a---')
         else:
