@@ -1,3 +1,4 @@
+from io import StringIO
 import os
 import stat
 import sys
@@ -57,16 +58,6 @@ class DirEntryWrapper:
         return self.entry.is_symlink()
 
 
-class Cache:
-    __slots__ = 'data'
-
-    def __init__(self):
-        self.data = ''
-
-    def write(self, value):
-        self.data += value
-
-
 class Ls:
     '''
     Lists the content of a directory.
@@ -83,7 +74,7 @@ class Ls:
         else:
             self.opt, self.path = '', opt
 
-        self.out = Cache() if to_cache else sys.stdout
+        self.out = StringIO() if to_cache else sys.stdout
         self.files = 0
         self.dirs = 0
         self.size = 0
