@@ -11,8 +11,8 @@ def setup():
     with open(f'{HOME_PATH}\\.macros.doskey', 'w') as f:
         print(
             'ls=python -m win_basic_tools $*',
-            'll=python -m win_basic_tools -cil $*',
-            'la=python -m win_basic_tools -acil $*',
+            'll=python -m win_basic_tools -cilm $*',
+            'la=python -m win_basic_tools -acilmhAH $*',
             'touch=echo off $T for %x in ($*) do type nul > %x $T echo on',
             'cat=type $1',
             'pwd=cd',

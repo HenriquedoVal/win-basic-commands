@@ -6,6 +6,12 @@ import time
 
 from colorama import Fore, Style, deinit, init
 
+try:
+    import locale
+    locale.setlocale(locale.LC_ALL, '')
+except locale.Error:
+    pass
+
 check_0 = (
     ('d', stat.FILE_ATTRIBUTE_DIRECTORY),
     ('l', stat.FILE_ATTRIBUTE_REPARSE_POINT),
@@ -58,6 +64,19 @@ class DirEntryWrapper:
         return self.entry.is_symlink()
 
 
+class Options:
+    def __init__(self, opt: str) -> None:
+        self.all = 'a' in opt
+        self.colors = 'c' in opt
+        self.icons = 'i' in opt
+        self.list = 'l' in opt
+        self.mtime = 'm' in opt
+        self.ctime = 'C' in opt
+        self.atime = 'A' in opt
+        self.hour = 'H' in opt
+        self.headers = 'h' in opt
+
+
 class Ls:
     '''
     Lists the content of a directory.
@@ -74,6 +93,7 @@ class Ls:
         else:
             self.opt, self.path = '', opt
 
+        self.opt = Options(opt)
         self.out = StringIO() if to_cache else sys.stdout
         self.files = 0
         self.dirs = 0
@@ -112,54 +132,104 @@ class Ls:
 
         # just add to the list if it will be ever displayed
         # first we remove hidden ones if user hasn't asked for it
-        dir = [
-            i for i in scandir
-            if ('a' in self.opt or not (
+        _dir = [
+            (i, i.stat()) for i in scandir
+            if (self.opt.all or not (
                 i.name.startswith('.') or
                 i.stat().st_file_attributes &
                 stat.FILE_ATTRIBUTE_HIDDEN)
                 )
         ]
 
-        if 'l' not in self.opt:
-            # if in, i would want the oposite order
-            dir.sort(key=lambda x: (x.stat().st_mode, x.name), reverse=True)
+        pad = '   '
+
+        if not self.opt.list:
+            # if True, i would want the oposite order
+            _dir.sort(key=lambda x: (x[1].st_mode, x[0].name), reverse=True)
 
             print(
-                *[self._type_color(i) for i in dir],
-                sep='   ', file=self.out
+                *[self._type_color(i[0]) for i in _dir],
+                sep=pad, file=self.out
             )
             return
 
-        dir.sort(key=lambda x: (x.stat().st_mode, x.name))
+        _dir.sort(key=lambda x: (x[1].st_mode, x[0].name))
 
-        for i in dir:
+        if self.opt.headers and _dir:
+            self._print_headers(pad)
+
+        time_mask = '%x'
+        if self.opt.hour:
+            time_mask += ' %X'
+
+        time_str = ''
+
+        for file, file_stat in _dir:
             filemode_str = self._windows_filemode(
-                i.stat().st_file_attributes
+                file_stat.st_file_attributes
             )
 
-            # print() by 'column item' for better performance
+            # print() by 'column item' for better "performance feel"
+            # when output is stdout
             print(end=' ', file=self.out)
-            print(filemode_str, end='   ', file=self.out)
-            print(time.strftime(
-                '%d %b %y %H:%M', time.localtime(
-                    i.stat().st_ctime)), end='   ', file=self.out)
+            print(filemode_str, end=pad, file=self.out)
+
+            for _opt in ('ctime', 'mtime', 'atime'):
+                if getattr(self.opt, _opt):
+                    time_str = time.strftime(
+                        time_mask, time.localtime(
+                            getattr(file_stat, 'st_' + _opt))
+                    )
+
+                    print(time_str, end=pad, file=self.out)
+
             print(
-                self._humanize_size(i).rjust(7),
-                end='   ', file=self.out
+                self._humanize_size(file).rjust(7),
+                end=pad, file=self.out
             )
-            print(self._type_color(i), file=self.out)
+
+            print(self._type_color(file), file=self.out)
 
         if not any((self.files, self.dirs)):
             return
 
-        total_size = self._humanize_size2(self.size).rjust(7)
-        print(
-            str(self.files).rjust(3) + ' Files',
-            str(self.dirs).rjust(2) + ' Dirs',
-            'Total: ', total_size,
-            sep='  ', file=self.out
+        total_size = (
+            self._humanize_size2(self.size) if self.size else '-'
+        ).rjust(7)
+
+        left_pad = (
+            sum((self.opt.mtime, self.opt.ctime, self.opt.atime))
+            * (len(time_str) + len(pad))
+            + len(pad) + 8  # inital space + filemode
         )
+
+        f = 'File'
+        if self.files != 1:
+            f += 's'
+
+        d = 'Directory'
+        if self.dirs != 1:
+            d = d[:-1] + 'ies'
+
+        print(
+            ' ' * left_pad
+            + total_size
+            + pad
+            + f'{self.files} {f}, {self.dirs} {d}',
+            end='', file=self.out
+        )
+
+    def _print_headers(self, pad):
+        res = Fore.GREEN + ' ' * 3 + 'Mode ' + pad
+
+        for _opt in ('ctime', 'mtime', 'atime'):
+            if getattr(self.opt, _opt):
+                res += _opt.capitalize().center(
+                    10 + 9 * int(self.opt.hour)) + pad
+
+        res += '   Size' + pad + 'Name' + Style.RESET_ALL
+
+        print(res, end='\n\n', file=self.out)
 
     def _type_color(self, i: DirEntryWrapper) -> str:
         is_syml = i.is_symlink()
@@ -170,7 +240,7 @@ class Ls:
         if is_syml:
             self.files += 1
 
-        if 'c' not in self.opt:
+        if not self.opt.colors:
             return i.name
 
         if is_dir or is_syml:
@@ -212,7 +282,7 @@ class Ls:
         else:
             data = str(entry)
 
-        if 'c' in self.opt:
+        if self.opt.colors:
             if 'G' in data:
                 data = Fore.RED + data + Style.RESET_ALL
                 data = data.rjust(16)
@@ -249,7 +319,7 @@ class Ls:
                     res[ind] = check[0]
 
         icon = ''
-        if 'i' in self.opt:
+        if self.opt.icons:
             for ind in range(5):
                 if res[ind] in icons_map:
                     icon = icons_map[res[ind]]
@@ -258,7 +328,7 @@ class Ls:
                 icon = icons_map['else']
 
         done = False  # flags coloring icon
-        if 'c' in self.opt:
+        if self.opt.colors:
             for ind in range(5):
                 if res[ind] == '-':
                     continue

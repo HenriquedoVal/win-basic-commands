@@ -9,6 +9,6 @@ if len(args) > 2:
     print(f'Ignored {args[2:]} arg(s)')
     args = args[:2]
 if len(args) == 2 and not args[0].startswith('-'):
-    print('Try: python -m win_basic_tools -acil path')
+    print('Try: python -m win_basic_tools -acilm path')
 
 Ls(*args).echo(0)
