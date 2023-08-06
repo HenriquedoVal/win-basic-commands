@@ -220,7 +220,10 @@ class Ls:
         )
 
     def _print_headers(self, pad):
-        res = Fore.GREEN + ' ' * 3 + 'Mode ' + pad
+        res = ' ' * 3 + 'Mode ' + pad
+
+        if self.opt.colors:
+            res = Fore.GREEN + res
 
         for _opt in ('ctime', 'mtime', 'atime'):
             if getattr(self.opt, _opt):

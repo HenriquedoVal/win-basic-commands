@@ -4,7 +4,7 @@ build-backend = 'setuptools.build_meta'
 
 [project]
 name = 'win-basic-tools'
-version = '0.4.0'
+version = '0.4.1'
 authors = [
   {name = 'Henrique do Val'},
   {email = 'henrique.val@hotmail.com'}
