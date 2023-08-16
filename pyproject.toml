@@ -14,6 +14,9 @@ description = 'Cli tool for listing the directory.'
 readme = {file = "README.md", content-type = 'text/markdown'}
 requires-python = '>=3.6'
 license = {text = 'MIT'}
+dependencies = [
+  'colorama>=0.4.6'
+]
 
 classifiers = [
   'Programming Language :: Python :: 3 :: Only',
@@ -35,4 +38,4 @@ Home-page = "https://github.com/HenriquedoVal/win-basic-tools"
 win-basic-tools = 'win_basic_tools.setup_cmd:main'
 
 [tool.setuptools.packages.find]
-include = ["win-basic-tools"]
+include = ["win_basic_tools"]
