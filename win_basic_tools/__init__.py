@@ -51,13 +51,13 @@ class DirEntryWrapper:
     def stat(self):
         try:
             return self.entry.stat()
-        except PermissionError:
+        except OSError:
             return self.entry.stat(follow_symlinks=False)
 
     def is_dir(self):
         try:
             return self.entry.is_dir()
-        except PermissionError:
+        except OSError:
             return self.entry.is_dir(follow_symlinks=False)
 
     def is_symlink(self):
